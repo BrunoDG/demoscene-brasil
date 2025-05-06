@@ -446,7 +446,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted } from 'vue'
 import { 
   MenuIcon, XIcon, CheckIcon, CodeIcon, PaletteIcon, 
   MusicIcon, UsersIcon, CalendarIcon, MapPinIcon, 
