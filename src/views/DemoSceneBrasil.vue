@@ -407,7 +407,10 @@
               <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
                 DemoScene Brasil
               </div>
-              <p class="text-gray-500 text-sm mt-1">© 2025 DemoScene Brasil. Todos os direitos reservados.</p>
+              <a href="https://beveldrive.com.br" target="_blank" class="flex items-center mt-2">
+                <img src="/apple-touch-icon.png" alt="Bevel Drive Logo" class="h-6 w-6 mr-2" />
+                <p class="text-gray-500 text-sm">© 2025 Bevel Drive. Todos os direitos reservados.</p>
+              </a>
             </div>
             <div class="flex space-x-6">
               <a href="#" class="text-gray-400 hover:text-cyan-400 transition-colors">
@@ -427,17 +430,6 @@
                 <span class="sr-only">Email</span>
               </a>
             </div>
-          </div>
-          <div class="mt-8 pt-8 border-t border-gray-800/30 text-center">
-            <nav class="flex flex-wrap justify-center gap-x-8 gap-y-4">
-              <a v-for="(item, index) in navItems" 
-                 :key="index" 
-                 :href="item.href" 
-                 class="text-sm text-gray-400 hover:text-cyan-400 transition-colors"
-                 @click="(e) => scrollToSection(e, item.href)">
-                {{ item.label }}
-              </a>
-            </nav>
           </div>
         </div>
       </footer>
