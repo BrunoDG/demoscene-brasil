@@ -1,0 +1,84 @@
+/* Performance optimizations */
+
+/* Use hardware acceleration for transforms */
+.transform-gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Optimize scrolling */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Reduce repaints for glassmorphism effects */
+.backdrop-blur-optimized {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transform: translateZ(0);
+}
+
+/* Optimize animations */
+.animate-optimized {
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Reduce layout shifts */
+.aspect-ratio-preserve {
+  aspect-ratio: var(--aspect-ratio, auto);
+}
+
+/* Image optimization */
+.img-optimized {
+  content-visibility: auto;
+  contain-intrinsic-size: var(--intrinsic-size, 200px);
+}
+
+/* Intersection observer optimization */
+.lazy-load {
+  content-visibility: auto;
+  contain-intrinsic-size: 1px 500px;
+}
+
+/* Reduce composite layers */
+.composite-layer {
+  isolation: isolate;
+}
+
+/* Optimize text rendering */
+.text-optimized {
+  text-rendering: optimizeSpeed;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .mobile-optimized {
+    transform: none !important;
+    will-change: auto !important;
+  }
+  
+  .backdrop-blur-optimized {
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+/* Reduce motion for accessibility and performance */
+@media (prefers-reduced-motion: reduce) {
+  .animate-optimized {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Battery optimization */
+@media (prefers-reduced-motion: reduce) {
+  .energy-efficient {
+    animation-play-state: paused;
+    will-change: auto;
+  }
+}

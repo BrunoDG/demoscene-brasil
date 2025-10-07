@@ -1,638 +1,302 @@
 <template>
-  <div class="relative min-h-screen overflow-hidden bg-black text-white">
-    <!-- Background 3D Animation -->
-    <div class="absolute inset-0 z-0">
-      <TresCanvas alpha>
-        <TresPerspectiveCamera :position="[0, 15, 40]" />
-        <OrbitControls 
-          :enableDamping="true" 
-          :enableZoom="true"
-          :maxDistance="60"
-          :minDistance="20" 
-          :autoRotate="false"
-          :minPolarAngle="Math.PI / 6"
-          :maxPolarAngle="Math.PI / 2.5"
-          :dampingFactor="0.05"
-        />
+  <div class="relative text-white">
+    <!-- Background FIXO - sempre visível, não rola -->
+    <div class="fixed inset-0 z-0">
+      <!-- Background CSS para Medium/High Quality -->
+      <BackgroundCSS v-if="quality === 'medium' || quality === 'high'" :quality="quality" />
+      
+      <!-- Elementos extras SOMENTE para High Quality -->
+      <div v-if="quality === 'high'" class="absolute inset-0 z-1 high-quality-extras">
+        <!-- Scanlines effect -->
+        <div class="scanlines"></div>
         
-        <!-- Fog para efeito de neblina cyberpunk -->
-        <TresFog :args="['#0b001a', 10, 60]" />
+        <!-- Extra floating elements -->
+        <div class="floating-holograms">
+          <div class="hologram hologram-1"></div>
+          <div class="hologram hologram-2"></div>
+          <div class="hologram hologram-3"></div>
+        </div>
         
-        <TresAmbientLight :intensity="0.1" />
+        <!-- Data streams -->
+        <div class="data-streams">
+          <div class="stream stream-1"></div>
+          <div class="stream stream-2"></div>
+          <div class="stream stream-3"></div>
+        </div>
         
-        <!-- Cidade Neon -->
-        <TresGroup>
-          <!-- Estrada/Grid base -->
-          <TresMesh :position="[0, -0.5, 0]" :rotation="[-Math.PI / 2, 0, 0]">
-            <TresPlaneGeometry :args="[50, 50]" />
-            <TresMeshStandardMaterial color="#050505" />
-          </TresMesh>
-          
-          <!-- Linhas de grade da estrada (estilo TRON) -->
-          <TresGridHelper 
-            :args="[50, 50, '#00ff88', '#101010']" 
-            :rotation="[-Math.PI / 2, 0, 0]" 
-            :position="[0, -0.48, 0]" 
-          />
-          
-          <!-- Prédios -->
-          <TresGroup>
-            <TresMesh 
-              v-for="(building, i) in buildings" 
-              :key="`building-${i}`"
-              :position="[building.x, building.y, building.z]"
-            >
-              <TresBoxGeometry :args="[building.width, building.height, building.depth]" />
-              <TresMeshStandardMaterial 
-                :color="building.color" 
-                :emissive="building.color"
-                :emissiveIntensity="0.5"
-                :metalness="0.8"
-                :roughness="0.2"
-              />
-            </TresMesh>
-          </TresGroup>
-          
-          <!-- Luzes para iluminar a cena -->
-          <TresPointLight :position="[10, 15, 10]" :intensity="2" color="#ff00ff" />
-          <TresPointLight :position="[-10, 15, -10]" :intensity="2" color="#00ffff" />
-          <TresPointLight :position="[0, 5, 0]" :intensity="1" color="#ffffff" />
-          
-          <!-- Postes de Luz -->
-          <TresGroup>
-            <TresGroup v-for="i in 10" :key="`streetlight-${i}`">
-              <TresMesh :position="[20 - i * 4, 2.5, 8]">
-                <TresCylinderGeometry :args="[0.1, 0.1, 5, 8]" />
-                <TresMeshStandardMaterial color="#333333" />
-              </TresMesh>
-              <TresSpotLight 
-                :position="[20 - i * 4, 5, 8]" 
-                :intensity="2" 
-                color="#ffaa00" 
-                :angle="Math.PI / 6"
-                :penumbra="0.2"
-                :distance="15"
-                :castShadow="true"
-              />
-            </TresGroup>
-            
-            <TresGroup v-for="i in 10" :key="`streetlight2-${i}`">
-              <TresMesh :position="[20 - i * 4, 2.5, -8]">
-                <TresCylinderGeometry :args="[0.1, 0.1, 5, 8]" />
-                <TresMeshStandardMaterial color="#333333" />
-              </TresMesh>
-              <TresSpotLight 
-                :position="[20 - i * 4, 5, -8]" 
-                :intensity="2" 
-                color="#ffaa00" 
-                :angle="Math.PI / 6"
-                :penumbra="0.2"
-                :distance="15"
-                :castShadow="true"
-              />
-            </TresGroup>
-          </TresGroup>
-        </TresGroup>
-        
-        <!-- Partículas animadas (veículos) -->
-        <TresGroup>
-          <!-- Veículos indo para um lado -->
-          <TresMesh 
-            v-for="(pos, i) in carPositions1" 
-            :key="`car1-${i}`"
-            :position="[pos, 0.1, 6]"
-          >
-            <TresBoxGeometry :args="[0.8, 0.3, 0.4]" />
-            <TresMeshStandardMaterial color="white" :emissive="'white'" :emissiveIntensity="1" />
-          </TresMesh>
-          <TresPointLight 
-            v-for="(pos, i) in carPositions1" 
-            :key="`carLight1-${i}`" 
-            :position="[pos, 0.3, 6]" 
-            :intensity="0.5" 
-            color="red" 
-            :distance="2" 
-          />
-          
-          <!-- Veículos indo para o outro lado -->
-          <TresMesh 
-            v-for="(pos, i) in carPositions2" 
-            :key="`car2-${i}`"
-            :position="[pos, 0.1, -6]"
-          >
-            <TresBoxGeometry :args="[0.8, 0.3, 0.4]" />
-            <TresMeshStandardMaterial color="white" :emissive="'white'" :emissiveIntensity="1" />
-          </TresMesh>
-          <TresPointLight 
-            v-for="(pos, i) in carPositions2" 
-            :key="`carLight2-${i}`" 
-            :position="[pos, 0.3, -6]" 
-            :intensity="0.5" 
-            color="white" 
-            :distance="2" 
-          />
-        </TresGroup>
-        
-        <!-- Partículas flutuantes -->
-        <TresMesh 
-          v-for="(particle, i) in particles" 
-          :key="i" 
-          :position="[particle.x, particle.y, particle.z]"
-        >
-          <TresSphereGeometry :args="[0.05, 8, 8]" />
-          <TresMeshStandardMaterial :color="particle.color" :emissive="particle.color" :emissiveIntensity="0.8" />
-        </TresMesh>
-      </TresCanvas>
+        <!-- Extra glow effects -->
+        <div class="extra-glows">
+          <div class="glow glow-cyan"></div>
+          <div class="glow glow-magenta"></div>
+          <div class="glow glow-yellow"></div>
+        </div>
+      </div>
+      
+      <!-- Static CSS Background para Low Quality -->
+      <div 
+        v-else-if="quality === 'low'"
+        class="absolute inset-0 static-cyberpunk-bg"
+      >
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_0%,_black_100%)]"></div>
+      </div>
     </div>
 
-    <!-- Content -->
+    <!-- Content - rola sobre o background fixo -->
     <div class="relative z-10">
       <!-- Header -->
-      <header class="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-md border-b border-cyan-500/30">
-        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div class="flex items-center">
-            <div class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              DemoScene Brasil
-            </div>
-          </div>
-          <nav class="hidden md:flex space-x-8">
-            <a v-for="(item, index) in navItems" 
-               :key="index" 
-               :href="item.href" 
-               class="text-sm uppercase tracking-wider hover:text-cyan-400 transition-colors"
-               @click="(e) => scrollToSection(e, item.href)">
-              {{ item.label }}
-            </a>
-          </nav>
-          <button class="md:hidden" @click="mobileMenuOpen = !mobileMenuOpen">
-            <MenuIcon v-if="!mobileMenuOpen" class="h-6 w-6 text-white" />
-            <XIcon v-else class="h-6 w-6 text-white" />
-          </button>
-        </div>
-        <!-- Mobile menu -->
-        <div v-if="mobileMenuOpen" class="md:hidden bg-black/40 backdrop-blur-md border-b border-cyan-500/30">
-          <div class="container mx-auto px-4 py-4">
-            <nav class="flex flex-col space-y-4">
-              <a v-for="(item, index) in navItems" 
-                 :key="index" 
-                 :href="item.href" 
-                 class="text-sm uppercase tracking-wider hover:text-cyan-400 transition-colors"
-                 @click="(e) => scrollToSection(e, item.href)">
-                {{ item.label }}
-              </a>
-            </nav>
-          </div>
-        </div>
-      </header>
+      <AppHeader />
 
-      <!-- Hero Section -->
-      <section id="hero" class="min-h-screen flex items-center justify-center px-4 py-20">
-        <div class="container mx-auto text-center">
-          <h1 class="text-4xl md:text-6xl lg:text-7xl font-extrabold mb-6 glitch-text">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-purple-500 to-pink-500">
-              Bem vindo à página da<br />DemoScene Brasil!
-            </span>
-          </h1>
-          <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Explorando a arte digital em tempo real e a criatividade sem limites
-          </p>
-          <div class="flex flex-wrap justify-center gap-4">
-            <button class="px-8 py-3 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-md text-white font-medium hover:from-cyan-600 hover:to-blue-600 transition-all shadow-lg shadow-cyan-500/20">
-              Explorar
-            </button>
-            <button class="px-8 py-3 bg-transparent border border-cyan-500 rounded-md text-cyan-400 font-medium hover:bg-cyan-950/30 transition-all">
-              Junte-se a nós
-            </button>
-          </div>
-        </div>
-      </section>
+      <!-- Hero Section - completamente transparente -->
+      <Hero />
 
-      <!-- What is DemoScene Section -->
-      <section id="about" class="py-20 px-4">
-        <div class="container mx-auto">
-          <h2 class="text-3xl md:text-4xl font-bold mb-12 text-center">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              O que é a DemoScene?
-            </span>
-          </h2>
-          <div class="grid md:grid-cols-2 gap-12 items-center">
-            <div class="order-2 md:order-1">
-              <p class="text-lg text-gray-300 mb-6">
-                A <span class="text-cyan-400 font-semibold">Demoscene</span> é uma subcultura digital internacional focada na produção de demos: apresentações audiovisuais em tempo real que demonstram habilidades em programação, design visual e música eletrônica.
-              </p>
-              <p class="text-lg text-gray-300 mb-6">
-                Surgida nos anos 80 com a pirataria de software, evoluiu para uma forma de arte digital onde programadores, artistas e músicos colaboram para criar experiências audiovisuais impressionantes, muitas vezes com limitações técnicas intencionais.
-              </p>
-              <p class="text-lg text-gray-300">
-                Em 2020, a UNESCO reconheceu a Demoscene como Patrimônio Cultural Imaterial na Alemanha, destacando sua importância cultural e artística.
-              </p>
-            </div>
-            <div class="order-1 md:order-2">
-              <div class="bg-black/20 backdrop-blur-sm p-1 border border-cyan-500/30 rounded-lg shadow-xl">
-                <div class="rounded-lg p-6 h-full">
-                  <h3 class="text-xl font-bold mb-4 text-cyan-400">Características principais:</h3>
-                  <ul class="space-y-3">
-                    <li class="flex items-start">
-                      <CheckIcon class="h-6 w-6 text-cyan-500 mr-2 flex-shrink-0" />
-                      <span>Código em tempo real gerando gráficos e música</span>
-                    </li>
-                    <li class="flex items-start">
-                      <CheckIcon class="h-6 w-6 text-cyan-500 mr-2 flex-shrink-0" />
-                      <span>Competições em eventos chamados "demoparties"</span>
-                    </li>
-                    <li class="flex items-start">
-                      <CheckIcon class="h-6 w-6 text-cyan-500 mr-2 flex-shrink-0" />
-                      <span>Foco em otimização e criatividade técnica</span>
-                    </li>
-                    <li class="flex items-start">
-                      <CheckIcon class="h-6 w-6 text-cyan-500 mr-2 flex-shrink-0" />
-                      <span>Comunidade global com décadas de história</span>
-                    </li>
-                    <li class="flex items-start">
-                      <CheckIcon class="h-6 w-6 text-cyan-500 mr-2 flex-shrink-0" />
-                      <span>Preservação de plataformas retro e técnicas de programação</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <!-- Sections - todas transparentes para mostrar o background -->
+      <AboutSection />
+      <WhoWeAreSection />
+      <PartiesSection />
+      <ContactSection />
+      <AppFooter />
+    </div>
 
-      <!-- Who We Are Section -->
-      <section id="who-we-are" class="py-20 px-4">
-        <div class="container mx-auto">
-          <h2 class="text-3xl md:text-4xl font-bold mb-12 text-center">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              Quem Somos
-            </span>
-          </h2>
-          <div class="max-w-4xl mx-auto bg-black/20 backdrop-blur-sm p-1 border border-cyan-500/30 rounded-lg shadow-xl">
-            <div class="rounded-lg p-8">
-              <p class="text-lg text-gray-300 mb-6">
-                A <span class="text-cyan-400 font-semibold">DemoScene Brasil</span> é uma comunidade dedicada a reunir e fomentar a cena brasileira de demos, conectando programadores, artistas visuais, músicos e entusiastas da arte digital em tempo real.
-              </p>
-              <p class="text-lg text-gray-300 mb-6">
-                Nosso objetivo é criar um espaço de colaboração, aprendizado e expressão criativa, promovendo a cultura demoscene no Brasil e conectando nossa comunidade ao cenário internacional.
-              </p>
-              <p class="text-lg text-gray-300 mb-8">
-                Seja você um veterano da demoscene ou alguém curioso para aprender mais, todos são bem-vindos a participar, compartilhar conhecimentos e contribuir para o crescimento desta forma única de arte digital em nosso país.
-              </p>
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div class="bg-black/30 backdrop-blur-sm p-[1px] border border-cyan-500/30 rounded-lg">
-                  <div class="rounded-lg h-full flex flex-col items-center justify-center p-4">
-                    <CodeIcon class="h-8 w-8 text-cyan-400 mb-2" />
-                    <h3 class="font-bold">Programadores</h3>
-                  </div>
-                </div>
-                <div class="bg-black/30 backdrop-blur-sm p-[1px] border border-purple-500/30 rounded-lg">
-                  <div class="rounded-lg h-full flex flex-col items-center justify-center p-4">
-                    <PaletteIcon class="h-8 w-8 text-pink-400 mb-2" />
-                    <h3 class="font-bold">Artistas</h3>
-                  </div>
-                </div>
-                <div class="bg-black/30 backdrop-blur-sm p-[1px] border border-purple-500/30 rounded-lg">
-                  <div class="rounded-lg h-full flex flex-col items-center justify-center p-4">
-                    <MusicIcon class="h-8 w-8 text-purple-400 mb-2" />
-                    <h3 class="font-bold">Músicos</h3>
-                  </div>
-                </div>
-                <div class="bg-black/30 backdrop-blur-sm p-[1px] border border-blue-500/30 rounded-lg">
-                  <div class="rounded-lg h-full flex flex-col items-center justify-center p-4">
-                    <UsersIcon class="h-8 w-8 text-blue-400 mb-2" />
-                    <h3 class="font-bold">Entusiastas</h3>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Upcoming Parties Section -->
-      <section id="parties" class="py-20 px-4">
-        <div class="container mx-auto">
-          <h2 class="text-3xl md:text-4xl font-bold mb-12 text-center">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              Próximas Parties
-            </span>
-          </h2>
-          <p class="text-center text-gray-300 max-w-3xl mx-auto mb-12">
-            Confira os próximos eventos da demoscene na América do Sul. Junte-se a nós para competições, workshops e muito networking com a comunidade.
-          </p>
-          <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div v-for="(party, index) in upcomingParties" :key="index" class="bg-black/20 backdrop-blur-sm p-[1px] border border-cyan-500/20 rounded-lg shadow-lg hover:shadow-cyan-500/10 transition-all group">
-              <div class="rounded-lg p-6 h-full flex flex-col">
-                <div class="flex justify-between items-start mb-4">
-                  <h3 class="text-xl font-bold text-white group-hover:text-cyan-400 transition-colors">{{ party.name }}</h3>
-                  <span class="px-2 py-1 bg-cyan-900/50 text-cyan-400 text-xs rounded-md">{{ party.country }}</span>
-                </div>
-                <p class="text-gray-400 mb-4 flex-grow">{{ party.description }}</p>
-                <div class="flex items-center text-gray-400 mb-4">
-                  <CalendarIcon class="h-5 w-5 mr-2 text-cyan-500" />
-                  <span>{{ party.date }}</span>
-                </div>
-                <div class="flex items-center text-gray-400 mb-6">
-                  <MapPinIcon class="h-5 w-5 mr-2 text-cyan-500" />
-                  <span>{{ party.location }}</span>
-                </div>
-                <a :href="party.url" target="_blank" class="text-sm text-cyan-400 hover:text-cyan-300 flex items-center mt-auto">
-                  Mais informações
-                  <ArrowRightIcon class="h-4 w-4 ml-1" />
-                </a>
-              </div>
-            </div>
-          </div>
-          <div class="text-center mt-12">
-            <button class="px-6 py-3 bg-transparent border border-cyan-500 rounded-md text-cyan-400 font-medium hover:bg-cyan-950/30 transition-all">
-              Ver todos os eventos
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- Contact Section -->
-      <section id="contact" class="py-20 px-4">
-        <div class="container mx-auto">
-          <h2 class="text-3xl md:text-4xl font-bold mb-6 text-center">
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-              Fale Conosco
-            </span>
-          </h2>
-          <p class="text-center text-gray-300 max-w-3xl mx-auto mb-12">
-            Junte-se à nossa comunidade no Discord para conhecer outros entusiastas, compartilhar projetos e ficar por dentro das novidades da demoscene brasileira.
-          </p>
-          <div class="max-w-md mx-auto bg-black/20 backdrop-blur-sm p-1 border border-purple-500/30 rounded-lg shadow-xl">
-            <div class="rounded-lg p-8 text-center">
-              <div class="mb-6">
-                <img src="https://assets-global.website-files.com/6257adef93867e50d84d30e2/636e0a6a49cf127bf92de1e2_icon_clyde_blurple_RGB.png" alt="Discord Logo" class="h-16 mx-auto mb-4" />
-                <h3 class="text-xl font-bold text-white mb-2">Discord Oficial</h3>
-                <p class="text-gray-400">O ponto de encontro da comunidade DemoScene Brasil</p>
-              </div>
-              <a href="https://discord.gg/demoscene-brasil" target="_blank" class="inline-block px-8 py-3 bg-[#5865F2] rounded-md text-white font-medium hover:bg-[#4752c4] transition-all shadow-lg">
-                Entrar no Discord
-              </a>
-            </div>
-          </div>
-          <div class="mt-16 max-w-4xl mx-auto">
-            <h3 class="text-xl font-bold text-center mb-8 text-cyan-400">Outras formas de contato</h3>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <a href="#" class="flex flex-col items-center p-4 bg-black/20 backdrop-blur-sm border border-gray-500/30 rounded-lg hover:bg-black/40 hover:border-cyan-500/30 transition-all">
-                <MailIcon class="h-8 w-8 text-gray-300 mb-2" />
-                <span class="text-gray-300">Email</span>
-              </a>
-              <a href="#" class="flex flex-col items-center p-4 bg-black/20 backdrop-blur-sm border border-gray-500/30 rounded-lg hover:bg-black/40 hover:border-cyan-500/30 transition-all">
-                <TwitterIcon class="h-8 w-8 text-gray-300 mb-2" />
-                <span class="text-gray-300">Twitter</span>
-              </a>
-              <a href="#" class="flex flex-col items-center p-4 bg-black/20 backdrop-blur-sm border border-gray-500/30 rounded-lg hover:bg-black/40 hover:border-cyan-500/30 transition-all">
-                <YoutubeIcon class="h-8 w-8 text-gray-300 mb-2" />
-                <span class="text-gray-300">YouTube</span>
-              </a>
-              <a href="#" class="flex flex-col items-center p-4 bg-black/20 backdrop-blur-sm border border-gray-500/30 rounded-lg hover:bg-black/40 hover:border-cyan-500/30 transition-all">
-                <GithubIcon class="h-8 w-8 text-gray-300 mb-2" />
-                <span class="text-gray-300">GitHub</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Footer -->
-      <footer class="py-8 px-4 border-t border-gray-800/30">
-        <div class="container mx-auto">
-          <div class="flex flex-col md:flex-row justify-between items-center">
-            <div class="mb-4 md:mb-0">
-              <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-500">
-                DemoScene Brasil
-              </div>
-              <a href="https://beveldrive.com.br" target="_blank" class="flex items-center mt-2">
-                <img src="/apple-touch-icon.png" alt="Bevel Drive Logo" class="h-6 w-6 mr-2" />
-                <p class="text-gray-500 text-sm">© 2025 Bevel Drive. Todos os direitos reservados.</p>
-              </a>
-            </div>
-            <div class="flex space-x-6">
-              <a href="#" class="text-gray-400 hover:text-cyan-400 transition-colors">
-                <TwitterIcon class="h-5 w-5" />
-                <span class="sr-only">Twitter</span>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-cyan-400 transition-colors">
-                <YoutubeIcon class="h-5 w-5" />
-                <span class="sr-only">YouTube</span>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-cyan-400 transition-colors">
-                <GithubIcon class="h-5 w-5" />
-                <span class="sr-only">GitHub</span>
-              </a>
-              <a href="#" class="text-gray-400 hover:text-cyan-400 transition-colors">
-                <MailIcon class="h-5 w-5" />
-                <span class="sr-only">Email</span>
-              </a>
-            </div>
-          </div>
-        </div>
-      </footer>
+    <!-- Performance Toggle (only show in development) -->
+    <div 
+      v-if="isDev" 
+      class="fixed bottom-4 right-4 z-50 bg-black/80 backdrop-blur-sm border border-cyan-500/30 rounded-lg p-4"
+    >
+      <h4 class="text-sm font-bold text-cyan-400 mb-2">Qualidade:</h4>
+      <div class="flex space-x-2">
+        <button
+          v-for="level in ['low', 'medium', 'high']"
+          :key="level"
+          @click="setQuality(level as QualityLevel)"
+          :class="[
+            'px-2 py-1 text-xs rounded transition-colors',
+            quality === level 
+              ? 'bg-cyan-500 text-black' 
+              : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+          ]"
+        >
+          {{ level }}
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { 
-  MenuIcon, XIcon, CheckIcon, CodeIcon, PaletteIcon, 
-  MusicIcon, UsersIcon, CalendarIcon, MapPinIcon, 
-  ArrowRightIcon, MailIcon, TwitterIcon, YoutubeIcon, GithubIcon 
-} from 'lucide-vue-next'
-import { TresCanvas } from '@tresjs/core'
-import { useRenderLoop } from '@tresjs/core'
-import { OrbitControls } from '@tresjs/cientos'
+import { computed } from 'vue'
+import { Hero } from '@/components/LazyComponents'
+import BackgroundCSS from '@/components/BackgroundCSS.vue'
+import AppHeader from '@/components/AppHeader.vue'
+import AppFooter from '@/components/AppFooter.vue'
+import AboutSection from '@/components/AboutSection.vue'
+import WhoWeAreSection from '@/components/WhoWeAreSection.vue'
+import PartiesSection from '@/components/PartiesSection.vue'
+import ContactSection from '@/components/ContactSection.vue'
+import { usePerformanceDetection, type QualityLevel } from '@/composables/usePerformanceDetection'
 
-// Navigation
-const navItems = [
-  { label: 'Início', href: '#hero' },
-  { label: 'O que é', href: '#about' },
-  { label: 'Quem Somos', href: '#who-we-are' },
-  { label: 'Parties', href: '#parties' },
-  { label: 'Contato', href: '#contact' }
-]
+// Performance detection
+const { quality, setQuality } = usePerformanceDetection()
 
-const mobileMenuOpen = ref(false)
-
-// Função para rolagem suave
-const scrollToSection = (event: Event, targetId: string) => {
-  event.preventDefault()
-  
-  // Fecha o menu mobile se estiver aberto
-  if (mobileMenuOpen.value) {
-    mobileMenuOpen.value = false
-  }
-  
-  const targetElement = document.querySelector(targetId)
-  if (targetElement) {
-    targetElement.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    })
-  }
-}
-
-// Cores neon para os edifícios e partículas
-const neonColors = ['#00ffff', '#ff00ff', '#00ff88', '#ff0088', '#8800ff', '#00ccff', '#ff00cc']
-
-// Estrutura para definir prédios
-interface Building {
-  x: number
-  y: number
-  z: number
-  width: number
-  height: number
-  depth: number
-  color: string
-}
-
-// Array com prédios em posições fixas
-const buildings = ref<Building[]>([])
-
-// Gerar prédios com posições fixas
-for (let i = 0; i < 20; i++) {
-  const color = neonColors[Math.floor(Math.random() * neonColors.length)]
-  buildings.value.push({
-    x: (Math.random() - 0.5) * 40,
-    y: Math.random() * 6 + 1,
-    z: (Math.random() - 0.5) * 40,
-    width: Math.random() * 3 + 1,
-    height: Math.random() * 10 + 2,
-    depth: Math.random() * 3 + 1,
-    color: color
-  })
-}
-
-// Partículas flutuantes
-interface Particle {
-  x: number
-  y: number
-  z: number
-  color: string
-  speed: number
-  direction: number
-}
-
-const particles = ref<Particle[]>([])
-
-// Gerar partículas aleatórias
-for (let i = 0; i < 50; i++) {
-  particles.value.push({
-    x: (Math.random() - 0.5) * 40,
-    y: Math.random() * 15,
-    z: (Math.random() - 0.5) * 40,
-    color: neonColors[Math.floor(Math.random() * neonColors.length)],
-    speed: Math.random() * 0.02 + 0.01,
-    direction: Math.random() > 0.5 ? 1 : -1
-  })
-}
-
-// Veículos
-const carPositions1 = ref<number[]>([])
-const carPositions2 = ref<number[]>([])
-
-// Inicializar posições dos veículos
-for (let i = 0; i < 8; i++) {
-  carPositions1.value.push(((i * 5) % 45) - 20)
-  carPositions2.value.push(20 - ((i * 5) % 45))
-}
-
-// Animation loop
-const { onLoop } = useRenderLoop()
-
-onMounted(() => {
-  onLoop(({ delta }) => {
-    // Animar as partículas
-    particles.value.forEach(particle => {
-      particle.y += particle.speed * particle.direction
-      
-      // Inverter direção quando atingir limites
-      if (particle.y > 15 || particle.y < 0) {
-        particle.direction *= -1
-      }
-    })
-    
-    // Animar veículos na primeira pista (esquerda para direita)
-    for (let i = 0; i < carPositions1.value.length; i++) {
-      carPositions1.value[i] += delta * 2
-      
-      // Loop quando sair do campo de visão
-      if (carPositions1.value[i] > 25) {
-        carPositions1.value[i] = -25
-      }
-    }
-    
-    // Animar veículos na segunda pista (direita para esquerda)
-    for (let i = 0; i < carPositions2.value.length; i++) {
-      carPositions2.value[i] -= delta * 2
-      
-      // Loop quando sair do campo de visão
-      if (carPositions2.value[i] < -25) {
-        carPositions2.value[i] = 25
-      }
-    }
-  })
-})
-
-// Upcoming Parties Data
-const upcomingParties = [
-  {
-    name: 'Demoparty Brasil 2025',
-    country: 'Brasil',
-    description: 'A primeira grande demoparty brasileira, com competições, workshops e palestras.',
-    date: '15-17 Maio, 2025',
-    location: 'São Paulo, Brasil',
-    url: '#'
-  },
-  {
-    name: 'Hacklab Demo Fest',
-    country: 'Argentina',
-    description: 'Festival focado em demos experimentais e arte digital interativa.',
-    date: '22-24 Julho, 2025',
-    location: 'Buenos Aires, Argentina',
-    url: '#'
-  },
-  {
-    name: 'Retrocomp Chile',
-    country: 'Chile',
-    description: 'Evento de computação retro com competições de demos para plataformas clássicas.',
-    date: '5-7 Setembro, 2025',
-    location: 'Santiago, Chile',
-    url: '#'
-  },
-  {
-    name: 'Pixel Jam Colombia',
-    country: 'Colômbia',
-    description: 'Game jam e demoparty com foco em gráficos pixelados e estética retro.',
-    date: '12-14 Outubro, 2025',
-    location: 'Bogotá, Colômbia',
-    url: '#'
-  },
-  {
-    name: 'Byte Fest Uruguay',
-    country: 'Uruguai',
-    description: 'Festival de arte digital e programação criativa com competições de demos.',
-    date: '28-30 Novembro, 2025',
-    location: 'Montevidéu, Uruguai',
-    url: '#'
-  },
-  {
-    name: 'Retro Coding Peru',
-    country: 'Peru',
-    description: 'Evento dedicado à programação retro e demos em hardware vintage.',
-    date: '16-18 Janeiro, 2026',
-    location: 'Lima, Peru',
-    url: '#'
-  }
-]
+// Development mode detection
+const isDev = computed(() => import.meta.env.DEV)
 </script>
 
 <style scoped>
+/* Static Cyberpunk Background for Low Quality */
+.static-cyberpunk-bg {
+  background: 
+    radial-gradient(circle at 20% 80%, rgba(120, 100, 255, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 20%, rgba(255, 100, 120, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 40% 40%, rgba(100, 255, 255, 0.1) 0%, transparent 40%),
+    linear-gradient(45deg, transparent 30%, rgba(0, 255, 136, 0.05) 31%, rgba(0, 255, 136, 0.05) 32%, transparent 33%),
+    linear-gradient(-45deg, transparent 30%, rgba(255, 0, 255, 0.05) 31%, rgba(255, 0, 255, 0.05) 32%, transparent 33%),
+    linear-gradient(to bottom, #000 0%, #0a0a0a 50%, #1a0a1a 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 50px 50px, 100% 100%;
+}
+
+/* HIGH QUALITY EXTRAS */
+.high-quality-extras {
+  pointer-events: none;
+}
+
+/* Scanlines effect */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    transparent 50%,
+    rgba(0, 255, 136, 0.03) 50%
+  );
+  background-size: 100% 4px;
+  animation: scanlines 0.1s linear infinite;
+}
+
+@keyframes scanlines {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(4px); }
+}
+
+/* Floating holograms */
+.floating-holograms {
+  position: absolute;
+  inset: 0;
+}
+
+.hologram {
+  position: absolute;
+  border: 1px solid;
+  border-radius: 8px;
+  background: transparent;
+  opacity: 0.7;
+}
+
+.hologram-1 {
+  top: 20%;
+  left: 15%;
+  width: 120px;
+  height: 80px;
+  border-color: #00ffff;
+  animation: hologramFloat1 8s ease-in-out infinite;
+  box-shadow: inset 0 0 20px rgba(0, 255, 255, 0.1);
+}
+
+.hologram-2 {
+  top: 60%;
+  right: 20%;
+  width: 90px;
+  height: 60px;
+  border-color: #ff00ff;
+  animation: hologramFloat2 6s ease-in-out infinite;
+  box-shadow: inset 0 0 20px rgba(255, 0, 255, 0.1);
+}
+
+.hologram-3 {
+  bottom: 30%;
+  left: 50%;
+  width: 100px;
+  height: 70px;
+  border-color: #ffff00;
+  animation: hologramFloat3 7s ease-in-out infinite;
+  box-shadow: inset 0 0 20px rgba(255, 255, 0, 0.1);
+}
+
+@keyframes hologramFloat1 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translate(10px, -15px) rotate(2deg); opacity: 0.9; }
+}
+
+@keyframes hologramFloat2 {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); opacity: 0.6; }
+  50% { transform: translate(-8px, 12px) rotate(-1deg); opacity: 0.8; }
+}
+
+@keyframes hologramFloat3 {
+  0%, 100% { transform: translate(-50%, 0) rotate(0deg); opacity: 0.7; }
+  50% { transform: translate(-50%, -10px) rotate(1deg); opacity: 0.9; }
+}
+
+/* Data streams */
+.data-streams {
+  position: absolute;
+  inset: 0;
+}
+
+.stream {
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: linear-gradient(to bottom, transparent, #00ff00, transparent);
+  opacity: 0.6;
+}
+
+.stream-1 {
+  left: 25%;
+  animation: dataStream1 3s linear infinite;
+}
+
+.stream-2 {
+  left: 65%;
+  animation: dataStream2 4s linear infinite;
+}
+
+.stream-3 {
+  right: 30%;
+  animation: dataStream3 3.5s linear infinite;
+}
+
+@keyframes dataStream1 {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes dataStream2 {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.6; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes dataStream3 {
+  0% { transform: translateY(-100%); opacity: 0; }
+  50% { opacity: 0.7; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+/* Extra glow effects */
+.extra-glows {
+  position: absolute;
+  inset: 0;
+}
+
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.3;
+}
+
+.glow-cyan {
+  top: 10%;
+  left: 20%;
+  width: 200px;
+  height: 200px;
+  background: #00ffff;
+  animation: glowPulse1 5s ease-in-out infinite;
+}
+
+.glow-magenta {
+  bottom: 20%;
+  right: 25%;
+  width: 150px;
+  height: 150px;
+  background: #ff00ff;
+  animation: glowPulse2 4s ease-in-out infinite;
+}
+
+.glow-yellow {
+  top: 50%;
+  left: 60%;
+  width: 180px;
+  height: 180px;
+  background: #ffff00;
+  animation: glowPulse3 6s ease-in-out infinite;
+}
+
+@keyframes glowPulse1 {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.1); }
+}
+
+@keyframes glowPulse2 {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.2); }
+}
+
+@keyframes glowPulse3 {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.15); }
+}
+
 /* Glitch effect for text */
 .glitch-text {
   position: relative;
