@@ -3,7 +3,7 @@ import { ref, onMounted, readonly } from 'vue'
 export type QualityLevel = 'low' | 'medium' | 'high'
 
 export function usePerformanceDetection() {
-  const quality = ref<QualityLevel>('medium')
+  const quality = ref<QualityLevel>('high') // Default para HIGH
   const isLowPerformance = ref(false)
 
   const detectPerformance = () => {
@@ -39,11 +39,13 @@ export function usePerformanceDetection() {
     if (isMobile || memory < 4 || renderer.toLowerCase().includes('intel')) {
       quality.value = 'low'
       isLowPerformance.value = true
-    } else if (memory >= 8 && !renderer.toLowerCase().includes('intel')) {
-      quality.value = 'high'
+    } else if (memory < 6) {
+      // Medium para dispositivos intermediários
+      quality.value = 'medium'
       isLowPerformance.value = false
     } else {
-      quality.value = 'medium'
+      // HIGH é o padrão para dispositivos com boa performance
+      quality.value = 'high'
       isLowPerformance.value = false
     }
 
